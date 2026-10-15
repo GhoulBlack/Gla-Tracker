@@ -68,7 +68,7 @@ button.g{background:transparent;color:var(--mut);border:1px solid var(--line)}
   <div id="cats" class="mut" style="margin:8px 0"></div>
   <div class="row">
     <input id="cn" placeholder="Nome (ex: Semanal)" style="flex:1;min-width:120px">
-    <input id="ci" placeholder="Itens separados por vírgula" style="flex:2;min-width:160px">
+    <input id="ci" placeholder="Itens separados por vírgula (vazio = 1 item sem nome)" style="flex:2;min-width:160px">
     <button id="ac">+ Categoria</button>
   </div>
 </div>
@@ -93,9 +93,11 @@ button.g{background:transparent;color:var(--mut);border:1px solid var(--line)}
 <script>
 var KEY="gla-v2",RANKS=["Novato","Aprendiz","Guerreiro","Veterano","Elite","Mestre","Lenda"];
 function load(){try{var s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return null}
-var S=load()||{members:[],cats:[{id:1,name:"Diário",items:["Missão","Dungeon","Boss"]},{id:2,name:"Semanal",items:["Raid","Evento"]}],checks:{},xp:{},wins:{},week:""};
+function seed(){return{cats:[{id:1,name:"Boss Semanal",items:["Alabasta","Jaya","Novos"]},{id:2,name:"Raid",items:["Skypiea","Enies Lobby"]},{id:3,name:"Boss Rush",items:["Sabaody"]},{id:4,name:"Wanted",items:[""]}],runs:{"1|0":5,"1|1":2,"1|2":3,"4|0":15},dual:{"1|0":true,"1|1":true,"1|2":true,"2|0":true,"2|1":true,"3|0":true}}}
+var S=load()||Object.assign({members:[],checks:{},xp:{},wins:{},week:""},seed());
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 S.prices=S.prices||{};S.runs=S.runs||{};S.dual=S.dual||{};S.pe=S.pe||{};S.modes=S.modes||{};
+if(S.cats.length==2&&S.cats[0].name=="Diário"&&S.cats[0].items.join()=="Missão,Dungeon,Boss"&&S.cats[1].items.join()=="Raid,Evento"){var sd=seed();S.cats=sd.cats;S.runs=sd.runs;S.dual=sd.dual;S.checks={};S.prices={};S.pe={};S.modes={};save()}
 Object.keys(S.checks).forEach(function(k){if(k.split("|").length==3){S.checks[k+"|0"]=1;delete S.checks[k]}});
 var ICONS={"x":'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',"swords":'<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/>',"coins":'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',"star":'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',"trophy":'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',"arrow-up":'<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',"sun-moon":'<path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>'};
 function ic(n,s){s=s||16;return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[n]+'</svg>'}
@@ -112,7 +114,7 @@ function price(m,k){return(S.dual[k]&&S.modes[m+"|"+k]=="e")?(S.pe[k]||0):(S.pri
 function fm(n){return n.toLocaleString("pt-BR",{maximumFractionDigits:2})}
 function earn(m){var n=0;S.cats.forEach(function(c){c.items.forEach(function(_,i){for(var r=0;r<runs(c.id,i);r++)if(S.checks[m+"|"+c.id+"|"+i+"|"+r])n+=price(m,c.id+"|"+i)})});return n}
 function maxPrice(m){var n=0;S.cats.forEach(function(c){c.items.forEach(function(_,i){n+=price(m,c.id+"|"+i)*runs(c.id,i)})});return n}
-function renderPrices(){$("prices").innerHTML=S.cats.map(function(c){return '<div class="cat"><b>'+esc(c.name)+'</b><div class="chips">'+c.items.map(function(it,i){var k=c.id+'|'+i,du=S.dual[k];return '<div class="mut" style="display:grid;gap:4px;width:210px">'+esc(it)+'<label class="row" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" data-d="'+k+'"'+(du?' checked':'')+'> Hard / Elite</label><span class="row" style="flex-wrap:nowrap"><input type="number" min="0" step="any" data-p="'+k+'" value="'+(S.prices[k]||0)+'" style="width:75px" title="'+(du?'Preço Hard':'Preço por vez')+'" placeholder="'+(du?'Hard':'Preço')+'">'+(du?'<input type="number" min="0" step="any" data-pe="'+k+'" value="'+(S.pe[k]||0)+'" style="width:75px" title="Preço Elite" placeholder="Elite">':'')+'<input type="number" min="1" max="20" data-r="'+k+'" value="'+runs(c.id,i)+'" style="width:55px" title="Quantas vezes (bolinhas)"></span></div>'}).join("")+'</div></div>'}).join("")}
+function renderPrices(){$("prices").innerHTML=S.cats.map(function(c){return '<div class="cat"><b>'+esc(c.name)+'</b><div class="chips">'+c.items.map(function(it,i){var k=c.id+'|'+i,du=S.dual[k];return '<div class="mut" style="display:grid;gap:4px;width:210px">'+(esc(it)||"(sem nome)")+'<label class="row" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" data-d="'+k+'"'+(du?' checked':'')+'> Hard / Elite</label><span class="row" style="flex-wrap:nowrap"><input type="number" min="0" step="any" data-p="'+k+'" value="'+(S.prices[k]||0)+'" style="width:75px" title="'+(du?'Preço Hard':'Preço por vez')+'" placeholder="'+(du?'Hard':'Preço')+'">'+(du?'<input type="number" min="0" step="any" data-pe="'+k+'" value="'+(S.pe[k]||0)+'" style="width:75px" title="Preço Elite" placeholder="Elite">':'')+'<input type="number" min="1" max="20" data-r="'+k+'" value="'+runs(c.id,i)+'" style="width:55px" title="Quantas vezes (bolinhas)"></span></div>'}).join("")+'</div></div>'}).join("")}
 function pop(t){var e=document.createElement("div");e.className="pop";e.innerHTML=t;document.body.appendChild(e);setTimeout(function(){e.remove()},1100)}
 function render(){
   var T=total(),sum=0,tot=0;
@@ -127,7 +129,7 @@ function render(){
   var g=S.members.length&&T?Math.round(sum/(T*S.members.length)*100):0;
   $("gp").textContent=g+"%";$("gb").style.width=g+"%";$("gt").textContent=fm(tot);
   if(!document.activeElement||!(document.activeElement.dataset.p||document.activeElement.dataset.r||document.activeElement.dataset.pe))renderPrices();
-  $("cats").innerHTML=S.cats.map(function(c){return esc(c.name)+': '+esc(c.items.join(", "))+' <button class="x" data-dc="'+c.id+'">'+ic("x")+'</button>'}).join("<br>")
+  $("cats").innerHTML=S.cats.map(function(c){return esc(c.name)+': '+esc(c.items.map(function(x){return x||"(sem nome)"}).join(", "))+' <button class="x" data-dc="'+c.id+'">'+ic("x")+'</button>'}).join("<br>")
 }
 function tick(){
   if(S.week!==weekKey()){reset();render()}
@@ -148,7 +150,7 @@ document.addEventListener("input",function(e){var t=e.target;if(t.dataset&&t.dat
   if(t.dataset&&t.dataset.d){S.dual[t.dataset.d]=t.checked;save();render();renderPrices()}if(t.dataset&&t.dataset.p){S.prices[t.dataset.p]=+t.value||0;save();render()}
   if(t.dataset&&t.dataset.r){S.runs[t.dataset.r]=Math.min(20,Math.max(1,Math.floor(+t.value)||1));save();render()}});
 $("am").onclick=function(){var v=$("nm").value.trim();if(!v)return;S.members.push({id:Date.now(),name:v});$("nm").value="";save();render()};
-$("ac").onclick=function(){var n=$("cn").value.trim(),it=$("ci").value.split(",").map(function(s){return s.trim()}).filter(Boolean);if(!n||!it.length)return alert("Informe nome e pelo menos um item.");S.cats.push({id:Date.now(),name:n,items:it});$("cn").value=$("ci").value="";save();render()};
+$("ac").onclick=function(){var n=$("cn").value.trim(),it=$("ci").value.split(",").map(function(s){return s.trim()});if(!n)return alert("Informe o nome da categoria.");S.cats.push({id:Date.now(),name:n,items:it});$("cn").value=$("ci").value="";save();render()};
 $("nm").onkeydown=function(e){if(e.key=="Enter")$("am").click()};
 $("ci").onkeydown=function(e){if(e.key=="Enter")$("ac").click()};
 $("cn").onkeydown=function(e){if(e.key=="Enter"){if($("ci").value.trim())$("ac").click();else $("ci").focus()}};
