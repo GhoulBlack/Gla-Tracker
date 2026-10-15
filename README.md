@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33508517/README.md)
+[README.md](https://github.com/user-attachments/files/33509052/README.md)
 # GLA Tracker
 
 Site estático (HTML único, sem build, sem dependências).
